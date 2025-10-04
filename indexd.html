@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R Antivirus</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+  body{
+    margin:0; font-family:'Roboto',sans-serif; background:#0f1724; color:#e6eef8;
+    display:flex; justify-content:center; align-items:flex-start; padding-top:20px;
+  }
+  .container{width:min(700px,95%); background:#111827; border-radius:16px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.7);}
+  h1{margin:0 0 10px; color:#ea2020;}
+  p{margin:0 0 20px; color:#9fb4d8;}
+  .dropzone{⁹
+    border: 2px dashed rgba(255,255,255,0.1); border-radius:12px; padding:30px;
+    text-align:center; cursor:pointer; transition:0.3s;
+  }
+  .dropzone.drag{background:rgba(255,255,255,0.05);}
+  .btn{background:#1f6feb; color:white; border:none; padding:10px 16px; border-radius:12px; cursor:pointer; margin-top:10px;}
+  progress{width:100%; height:14px; border-radius:8px; overflow:hidden; margin-top:10px;}
+  .result{margin-top:15px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.15);}
+  .good{color:#9be7a0;}
+  .bad{color:#ff6b6b;}
+  .settings{margin-top:20px; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px;}
+  .settings h3{margin-top:0; color:#f0f0f0;}
+  label{display:block; margin:8px 0; font-size:14px;}
+  select,input[type=checkbox]{margin-left:8px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>R Antivirus</h1>
+  <p>Drag & drop files here or click to choose. Supports multi-file scan simulation.</p>
+
+  <div class="dropzone" id="dropzone">Drop files or click here</div>
+  <input type="file" id="fileInput" multiple style="display:none;">
+
+  <button class="btn" id="scanBtn" disabled>Scan Files</button>
+
+  <progress id="progress" value="0" max="100" style="display:none"></progress>
+
+  <div id="result" class="result" style="display:none"></div>
+
+  <div class="settings">
+    <h3>Settings</h3>
+    <label><input type="checkbox" id="deepScan"> Enable Deep Scan</label>
+    <label>Theme: <select id="themeSelect"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+    <label><input type="checkbox" id="notify"> Show Notifications</label>
+  </div>
+</div>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const scanBtn = document.getElementById('scanBtn');
+const progress = document.getElementById('progress');
+const resultBox = document.getElementById('result');
+const themeSelect = document.getElementById('themeSelect');
+
+let filesToScan = [];
+
+dropzone.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', e=> selectFiles(e.target.files));
+
+dropzone.addEventListener('dragover', e=> { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', e=> dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=> { 
+  e.preventDefault(); dropzone.classList.remove('drag'); 
+  selectFiles(e.dataTransfer.files);
+});
+
+function selectFiles(files){
+  filesToScan = Array.from(files);
+  if(filesToScan.length>0){
+    dropzone.textContent = filesToScan.map(f=>f.name).join(', ');
+    scanBtn.disabled = false;
+    resultBox.style.display='none';
+  }
+}
+
+scanBtn.addEventListener('click', ()=> startScan());
+
+function startScan(){
+  if(filesToScan.length==0) return;
+  scanBtn.disabled=true;
+  progress.style.display='block';
+  progress.value=0;
+  resultBox.style.display='block';
+  resultBox.innerHTML='Scanning '+filesToScan.length+' files...';
+
+  let current=0;
+  const deepScan = document.getElementById('deepScan').checked;
+
+  function scanNext(){
+    if(current >= filesToScan.length){
+      progress.value=100;
+      resultBox.innerHTML += '<br><span class="good">Scan Complete. No threats found.</span>';
+      scanBtn.disabled=false;
+      if(document.getElementById('notify').checked && Notification) Notification.requestPermission().then(p=>{
+        if(p==='granted') new Notification("R Antivirus","Scan Complete. No threats found.");
+      });
+      return;
+    }
+    const file = filesToScan[current];
+    let scanTime = deepScan ? 800 : 400; // simulate longer for deep scan
+    resultBox.innerHTML = `Scanning: ${file.name} (${current+1}/${filesToScan.length})`;
+    setTimeout(()=>{
+      progress.value = ((current+1)/filesToScan.length)*100;
+      current++;
+      scanNext();
+    }, scanTime);
+  }
+
+  scanNext();
+}
+
+// Theme switching
+themeSelect.addEventListener('change', ()=>{
+  if(themeSelect.value==='light'){
+    document.body.style.background='#f0f0f0';
+    document.body.style.color='#111';
+  }else{
+    document.body.style.background='#0f1724';
+    document.body.style.color='#e6eef8';
+  }
+});
+</script>
+</body>
+</html>
